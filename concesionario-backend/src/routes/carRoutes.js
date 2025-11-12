@@ -1,25 +1,26 @@
 // src/routes/carRoutes.js
 const express = require('express');
 const router = express.Router();
-
 const {
   getAllCars,
-  getCarById,
   createCar,
+  updateCar,
   deleteCar,
-  getCarMessages
 } = require('../controllers/carController');
 
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 
-// Rutas públicas
-router.get('/', getAllCars);          // Ver todos los coches
-router.get('/:id', getCarById);       // Ver un coche por ID
-router.get('/:id/mensajes', getCarMessages); // Ver mensajes de un coche
+// públicas
+router.get('/', getAllCars);
+router.get('/:id', async (req, res) => {
+  // opcional: implementa get by id en tu controller
+  res.status(501).json({ error: 'No implementado' });
+});
 
-// Rutas protegidas (solo Admin)
-router.post('/', authMiddleware, roleMiddleware(['ADMIN']), createCar);
-router.delete('/:id', authMiddleware, roleMiddleware(['ADMIN']), deleteCar);
+// protegidas (solo Admin)
+router.post('/', authMiddleware, roleMiddleware(['Admin', 'ADMIN']), createCar);
+router.put('/:id', authMiddleware, roleMiddleware(['Admin', 'ADMIN']), updateCar);
+router.delete('/:id', authMiddleware, roleMiddleware(['Admin', 'ADMIN']), deleteCar);
 
 module.exports = router;

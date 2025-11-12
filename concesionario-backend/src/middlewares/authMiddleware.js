@@ -1,20 +1,27 @@
-const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET;
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET || "cambiame";
 
 module.exports = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = req.cookies.accessToken;
+  const csrfHeader = req.headers["x-csrf-token"];
 
-  if (!token) {
-    return res.status(401).json({ error: 'Token no proporcionado' });
-  }
+  if (!token) return res.status(401).json({ error: "No autenticado" });
 
   try {
-    const user = jwt.verify(token, JWT_SECRET);
-    req.user = user; // Guardamos los datos del usuario en la request
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    // Validar token CSRF (básico)
+    if (!csrfHeader || csrfHeader.length < 20) {
+      return res.status(403).json({ error: "Token CSRF inválido o ausente" });
+    }
+
+    req.user = {
+      id: payload.userId,
+      email: payload.email,
+      rol: payload.rol,
+    };
     next();
-  } catch (error) {
-    return res.status(403).json({ error: 'Token inválido o expirado' });
+  } catch (err) {
+    return res.status(401).json({ error: "Token inválido o expirado" });
   }
 };
-
