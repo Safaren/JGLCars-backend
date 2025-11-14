@@ -12,7 +12,10 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: "http://localhost:3000", 
+    origin: [
+      "http://localhost:3000",                 // para entorno local
+      "https://jgl-cars-frontend.vercel.app"   // para producción en Vercel
+    ],
     credentials: true, // permite cookies entre dominios
   })
 );
