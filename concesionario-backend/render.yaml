@@ -1,0 +1,35 @@
+# ========================================================
+# render.yaml — Configuración de despliegue para JGLCars Backend
+# ========================================================
+
+services:
+  - type: web
+    name: jlgcars-api
+    env: node
+    region: frankfurt  # o "oregon", el más cercano a ti
+    plan: free
+    branch: master       
+    buildCommand: |
+      npm install
+      npx prisma generate
+    startCommand: |
+      node src/index.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: PORT
+        value: 4000
