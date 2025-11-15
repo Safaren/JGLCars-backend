@@ -44,15 +44,15 @@ exports.login = async (req, res) => {
     // Cookies seguras
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false, // true en producción
+      sameSite: "none",
+      secure: true, // true en producción
       maxAge: 15 * 60 * 1000, // 15 min
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      sameSite: "none",
+      secure: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     });
 
@@ -89,8 +89,8 @@ exports.refreshAccessToken = async (req, res) => {
 
     res.cookie("accessToken", newAccessToken, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      sameSite: "none",
+      secure: true,
       maxAge: 15 * 60 * 1000,
     });
 
