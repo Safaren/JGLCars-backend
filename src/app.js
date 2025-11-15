@@ -14,7 +14,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",                 // para entorno local
-      "https://jgl-cars-frontend.vercel.app"   // para producción en Vercel
+      "https://jgl-cars-frontend.vercel.app",   // para producción en Vercel
+      /\.vercel\.app$/,
     ],
     credentials: true, // permite cookies entre dominios
   })
