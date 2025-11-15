@@ -5,41 +5,53 @@ const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require("cookie-parser");
 
-
 const app = express();
 
-// middlewares
-app.use(helmet());
+// ===========================
+// 🌐 CORS (Frontend Vercel + Localhost)
+// ===========================
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://jgl-cars-frontend.vercel.app",
+  "https://jgl-cars-frontend-safarens-projects.vercel.app",
+  "https://jgl-cars-frontend-*",
+  /\.vercel\.app$/
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",                 // para entorno local
-      "https://jgl-cars-frontend.vercel.app",   // para producción en Vercel
-      /\.vercel\.app$/,
-    ],
-    credentials: true, // permite cookies entre dominios
+    origin: function (origin, callback) {
+      // Permitir peticiones sin origin (Postman / servidor)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin) || origin.includes("vercel.app")) {
+        return callback(null, true);
+      }
+      console.log("❌ Bloqueado por CORS:", origin);
+      return callback(new Error("CORS no permitido"), false);
+    },
+    credentials: true,
   })
 );
+
+// ===========================
+// 🔐 Seguridad + parsing
+// ===========================
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 
-// rutas
+// ===========================
+// 🚦 Rutas
+// ===========================
 const authRoutes = require('./routes/authRoutes');
 const carRoutes = require('./routes/carRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const favoritoRoutes = require('./routes/favoritoRoutes');
-
 const contactoRoutes = require('./routes/contactoRoutes');
 const piezaRoutes = require("./routes/piezaRoutes");
-
 const fotoPiezaRoutes = require("./routes/fotoPiezaRoutes");
-
 const fotoCarRoutes = require("./routes/fotoCarRoutes");
-
-
-
-
-
 
 app.use('/api', uploadRoutes);
 app.use('/api/auth', authRoutes);
@@ -50,9 +62,14 @@ app.use("/api/piezas", piezaRoutes);
 app.use("/api/fotos-pieza", fotoPiezaRoutes);
 app.use("/api/fotos-car", fotoCarRoutes);
 
-// ruta raíz
+// ===========================
+// Ruta raíz
+// ===========================
 app.get('/', (req, res) => {
   res.json({ ok: true, message: 'API del concesionario funcionando' });
 });
 
 module.exports = app;
+
+
+
