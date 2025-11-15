@@ -31,7 +31,9 @@ exports.login = async (req, res) => {
     );
 
     // CSRF token aleatorio
-    const csrfToken = cryptoRandomString({ length: 32, type: "url-safe" });
+    const crypto = require("crypto");
+    const csrfToken = crypto.randomBytes(32).toString("hex");
+
 
     // Guardar Refresh Token en DB (opcional)
     await prisma.user.update({
