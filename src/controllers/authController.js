@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
+const crypto = require("crypto");
 
 const JWT_SECRET = process.env.JWT_SECRET || "cambiame";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refreshtoken123";
@@ -27,7 +28,6 @@ exports.login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    const crypto = require("crypto");
     const csrfToken = crypto.randomBytes(32).toString("hex");
 
     await prisma.user.update({
@@ -55,20 +55,24 @@ exports.login = async (req, res) => {
       user: { id: user.id, email: user.email, rol: user.rol },
     });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Error al iniciar sesión" });
   }
 };
 
 exports.refreshAccessToken = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
-  if (!refreshToken) return res.status(401).json({ error: "Falta refresh token" });
+  if (!refreshToken)
+    return res.status(401).json({ error: "Falta refresh token" });
 
   try {
     const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
 
-    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
+
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(403).json({ error: "Refresh token inválido" });
     }
@@ -79,8 +83,6 @@ exports.refreshAccessToken = async (req, res) => {
       { expiresIn: "15m" }
     );
 
-    // Nuevo CSRF token
-    const crypto = require("crypto");
     const csrfToken = crypto.randomBytes(32).toString("hex");
 
     res.cookie("accessToken", newAccessToken, {
@@ -90,10 +92,10 @@ exports.refreshAccessToken = async (req, res) => {
       maxAge: 15 * 60 * 1000,
     });
 
-    return res.json({ message: "Token renovado", csrfToken });
+    res.json({ message: "Token renovado", csrfToken });
 
-  } catch (error) {
-    console.error("Error al refrescar token:", error);
+  } catch (err) {
+    console.error(err);
     res.status(403).json({ error: "Token inválido o expirado" });
   }
 };
