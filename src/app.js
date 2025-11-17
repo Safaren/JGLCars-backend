@@ -14,6 +14,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://jgl-cars-frontend.vercel.app",
+  /\.vercel\.app$/
 ];
 
 app.use(
