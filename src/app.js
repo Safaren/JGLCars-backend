@@ -20,19 +20,24 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Permitir solicitudes sin origin (Postman, curl)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      // ✔ Ahora permite dominios y regex como *.vercel.app
+      if (
+        allowedOrigins.some((o) =>
+          typeof o === "string" ? o === origin : o.test(origin)
+        )
+      ) {
         return callback(null, true);
       } else {
         console.warn("⛔ Origen no permitido:", origin);
         return callback(new Error("No permitido por CORS"));
       }
     },
-    credentials: true, // 🔥 NECESARIO PARA COOKIES
+    credentials: true,
   })
 );
+
 
 // 🔥 NECESARIO PARA QUE VERCEL PUEDA RECIBIR COOKIES
 app.use((req, res, next) => {
