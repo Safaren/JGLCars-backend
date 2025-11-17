@@ -1,4 +1,3 @@
-// src/app.js
 require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
@@ -14,7 +13,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://jgl-cars-frontend.vercel.app",
-  /\.vercel\.app$/
+  /.*\.vercel\.app$/ // <-- NUEVO: acepta cualquier dominio vercel.app
 ];
 
 app.use(
@@ -22,7 +21,6 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
-      // ✔ Ahora permite dominios y regex como *.vercel.app
       if (
         allowedOrigins.some((o) =>
           typeof o === "string" ? o === origin : o.test(origin)
@@ -38,15 +36,19 @@ app.use(
   })
 );
 
+// Habilitar OPTIONS para preflight
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Origin", req.headers.origin);
+  res.header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+  res.sendStatus(200);
+});
 
-// 🔥 NECESARIO PARA QUE VERCEL PUEDA RECIBIR COOKIES
+// Headers CORS
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, X-CSRF-Token, Authorization"
-  );
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+  res.header("Access-Control-Allow-Origin", req.headers.origin);
   next();
 });
 
