@@ -14,6 +14,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "https://jgl-cars-frontend.vercel.app",
+  /.*\.vercel\.app$/
 ];
 
 app.use(
