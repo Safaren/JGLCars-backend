@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const cloudinary = require("cloudinary").v2;
+const { Readable } = require("stream");
 
 // Configurar Cloudinary
 cloudinary.config({
@@ -8,71 +9,89 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ Obtener fotos de un coche
+// --------------------------------------------------
+// OBTENER FOTOS
+// --------------------------------------------------
 exports.getCarImages = async (req, res) => {
   try {
     const { carId } = req.params;
     const fotos = await prisma.imagen.findMany({
-      where: { carId: parseInt(carId) },
+      where: { carId: Number(carId) },
       orderBy: { id: "asc" },
     });
     res.json(fotos);
-  } catch (error) {
-    console.error(error);
+  } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Error al obtener imágenes" });
   }
 };
 
-// ✅ Subir varias imágenes a Cloudinary
+// --------------------------------------------------
+// SUBIR MÚLTIPLES IMÁGENES (CORREGIDO)
+// --------------------------------------------------
 exports.uploadCarImages = async (req, res) => {
   try {
     const { carId } = req.params;
-    if (!req.files || req.files.length === 0)
-      return res.status(400).json({ error: "No se subieron archivos" });
 
-    const uploads = await Promise.all(
-      req.files.map(
-        (file) =>
-          new Promise((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream(
-              { folder: "jlgcars/coches" },
-              async (error, result) => {
-                if (error) return reject(error);
-                const imagen = await prisma.imagen.create({
-                  data: {
-                    carId: parseInt(carId),
-                    url: result.secure_url,
-                  },
-                });
-                resolve(imagen);
-              }
-            );
-            file.stream.pipe(stream);
-          })
-      )
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No se subieron archivos" });
+    }
+
+    const results = await Promise.all(
+      req.files.map((file) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "jlgcars/coches" },
+            async (error, result) => {
+              if (error) return reject(error);
+
+              const fotoDb = await prisma.imagen.create({
+                data: {
+                  url: result.secure_url,
+                  carId: Number(carId),
+                },
+              });
+
+              resolve(fotoDb);
+            }
+          );
+
+          // Convertir buffer en stream
+          const bufferStream = Readable.from(file.buffer);
+          bufferStream.pipe(uploadStream);
+        });
+      })
     );
 
-    res.json({ message: "Imágenes subidas correctamente", imagenes: uploads });
-  } catch (error) {
-    console.error(error);
+    res.json({ message: "Imágenes subidas correctamente", imagenes: results });
+
+  } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Error al subir imágenes" });
   }
 };
 
-// ✅ Eliminar una imagen
+// --------------------------------------------------
+// BORRAR IMAGEN
+// --------------------------------------------------
 exports.deleteCarImage = async (req, res) => {
   try {
     const { id } = req.params;
-    const imagen = await prisma.imagen.findUnique({ where: { id: parseInt(id) } });
+
+    const imagen = await prisma.imagen.findUnique({
+      where: { id: Number(id) },
+    });
+
     if (!imagen) return res.status(404).json({ error: "Imagen no encontrada" });
 
     const publicId = imagen.url.split("/").pop().split(".")[0];
     await cloudinary.uploader.destroy(`jlgcars/coches/${publicId}`);
 
-    await prisma.imagen.delete({ where: { id: parseInt(id) } });
+    await prisma.imagen.delete({ where: { id: Number(id) } });
     res.json({ message: "Imagen eliminada correctamente" });
-  } catch (error) {
-    console.error(error);
+
+  } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Error al eliminar imagen" });
   }
 };
