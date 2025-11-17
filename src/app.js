@@ -7,18 +7,18 @@ const cookieParser = require("cookie-parser");
 const app = express();
 
 // ─────────────────────────────────────────────
-//  CORS CONFIG PARA RENDER + VERCEL
+//   CORS ÚNICO (NO repetir CORS luego)
 // ─────────────────────────────────────────────
 
 const allowedOrigins = [
   "http://localhost:3000",
   "https://jgl-cars-frontend.vercel.app",
-  /.*\.vercel\.app$/
+  /.*\.vercel\.app$/,
 ];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
       if (
@@ -36,38 +36,33 @@ app.use(
   })
 );
 
-// ⭐⭐⭐ MANEJO GLOBAL DE PRE-FLIGHT SIN WILDCARDS ⭐⭐⭐
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, X-CSRF-Token, Authorization"
-    );
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    return res.sendStatus(200);
-  }
-  next();
-});
+// ─────────────────────────────────────────────
+//   Preflight limpio (sin wildcard "*")
+// ─────────────────────────────────────────────
 
-// Headers CORS mínimos necesarios
-app.use((req, res, next) => {
+app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Origin", req.headers.origin);
-  next();
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, X-CSRF-Token, Authorization"
+  );
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.sendStatus(200);
 });
 
 // ─────────────────────────────────────────────
-//  MIDDLEWARES
+//   Middlewares
 // ─────────────────────────────────────────────
+
 app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 
 // ─────────────────────────────────────────────
-//  RUTAS
+//   Rutas
 // ─────────────────────────────────────────────
+
 const authRoutes = require("./routes/authRoutes");
 const carRoutes = require("./routes/carRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");

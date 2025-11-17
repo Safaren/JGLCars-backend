@@ -34,6 +34,7 @@ model User {
   compras     Compra[]
   rol         String      @default("User") // "User" o "Admin"
   favoritos   Favorito[] // Nueva relación
+  refreshToken String?
 }
 
 model Direccion {
