@@ -6,10 +6,6 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
-// ─────────────────────────────────────────────
-//   CORS ÚNICO (NO repetir CORS luego)
-// ─────────────────────────────────────────────
-
 const allowedOrigins = [
   "http://localhost:3000",
   "https://jgl-cars-frontend.vercel.app",
@@ -18,14 +14,10 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
       if (!origin) return callback(null, true);
 
-      if (
-        allowedOrigins.some((o) =>
-          typeof o === "string" ? o === origin : o.test(origin)
-        )
-      ) {
+      if (allowedOrigins.some((o) => typeof o === "string" ? o === origin : o.test(origin))) {
         return callback(null, true);
       }
 
@@ -36,10 +28,7 @@ app.use(
   })
 );
 
-// ─────────────────────────────────────────────
-//   Preflight GLOBAL válido
-// ─────────────────────────────────────────────
-
+// Preflight
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     res.header("Access-Control-Allow-Credentials", "true");
@@ -54,37 +43,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─────────────────────────────────────────────
-//   Middlewares
-// ─────────────────────────────────────────────
-
+// Middlewares
 app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 
-// ─────────────────────────────────────────────
-//   Rutas
-// ─────────────────────────────────────────────
+// Rutas
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/cars", require("./routes/carRoutes"));
+app.use("/api", require("./routes/uploadRoutes"));
+app.use("/api/favoritos", require("./routes/favoritoRoutes"));
+app.use("/api/contacto", require("./routes/contactoRoutes"));
+app.use("/api/piezas", require("./routes/piezaRoutes"));
+app.use("/api/fotos-pieza", require("./routes/fotoPiezaRoutes"));
+app.use("/api/fotos-car", require("./routes/fotoCarRoutes"));
 
-const authRoutes = require("./routes/authRoutes");
-const carRoutes = require("./routes/carRoutes");
-const uploadRoutes = require("./routes/uploadRoutes");
-const favoritoRoutes = require("./routes/favoritoRoutes");
-const contactoRoutes = require("./routes/contactoRoutes");
-const piezaRoutes = require("./routes/piezaRoutes");
-const fotoPiezaRoutes = require("./routes/fotoPiezaRoutes");
-const fotoCarRoutes = require("./routes/fotoCarRoutes");
-
-app.use("/api/auth", authRoutes);
-app.use("/api/cars", carRoutes);
-app.use("/api", uploadRoutes);
-app.use("/api/favoritos", favoritoRoutes);
-app.use("/api/contacto", contactoRoutes);
-app.use("/api/piezas", piezaRoutes);
-app.use("/api/fotos-pieza", fotoPiezaRoutes);
-app.use("/api/fotos-car", fotoCarRoutes);
-
-// Ruta de prueba
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "API funcionando correctamente 🚀" });
 });

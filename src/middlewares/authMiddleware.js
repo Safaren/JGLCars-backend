@@ -10,9 +10,9 @@ module.exports = (req, res, next) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
 
-    // Validar token CSRF (básico)
+    // Validación CSRF
     if (!csrfHeader || csrfHeader.length < 20) {
-      return res.status(403).json({ error: "Token CSRF inválido o ausente" });
+      return res.status(403).json({ error: "CSRF inválido" });
     }
 
     req.user = {
@@ -20,7 +20,9 @@ module.exports = (req, res, next) => {
       email: payload.email,
       rol: payload.rol,
     };
+
     next();
+
   } catch (err) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
