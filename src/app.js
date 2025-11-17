@@ -7,18 +7,18 @@ const cookieParser = require("cookie-parser");
 const app = express();
 
 // ─────────────────────────────────────────────
-//  CORS CONFIG ESPECIAL PARA RENDER + VERCEL
+//  CORS CONFIG PARA RENDER + VERCEL
 // ─────────────────────────────────────────────
 
 const allowedOrigins = [
   "http://localhost:3000",
   "https://jgl-cars-frontend.vercel.app",
-  /.*\.vercel\.app$/ // <-- NUEVO: acepta cualquier dominio vercel.app
+  /.*\.vercel\.app$/
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
       if (!origin) return callback(null, true);
 
       if (
@@ -27,27 +27,31 @@ app.use(
         )
       ) {
         return callback(null, true);
-      } else {
-        console.warn("⛔ Origen no permitido:", origin);
-        return callback(new Error("No permitido por CORS"));
       }
+
+      console.warn("⛔ Origen no permitido:", origin);
+      callback(new Error("No permitido por CORS"));
     },
     credentials: true,
   })
 );
 
-// Habilitar OPTIONS para preflight
-// Manejo de preflight OPTIONS para todas las rutas
-app.options("/*", (req, res) => {
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-  res.header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.sendStatus(200);
+// ⭐⭐⭐ MANEJO GLOBAL DE PRE-FLIGHT SIN WILDCARDS ⭐⭐⭐
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, X-CSRF-Token, Authorization"
+    );
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+    return res.sendStatus(200);
+  }
+  next();
 });
 
-
-// Headers CORS
+// Headers CORS mínimos necesarios
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Origin", req.headers.origin);
@@ -82,7 +86,7 @@ app.use("/api/piezas", piezaRoutes);
 app.use("/api/fotos-pieza", fotoPiezaRoutes);
 app.use("/api/fotos-car", fotoCarRoutes);
 
-// RUTA DE PRUEBA
+// Ruta de prueba
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "API funcionando correctamente 🚀" });
 });
