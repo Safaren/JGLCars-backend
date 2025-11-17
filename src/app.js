@@ -37,13 +37,15 @@ app.use(
 );
 
 // Habilitar OPTIONS para preflight
-app.options("*", (req, res) => {
+// Manejo de preflight OPTIONS para todas las rutas
+app.options("/*", (req, res) => {
   res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Origin", req.headers.origin);
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.sendStatus(200);
 });
+
 
 // Headers CORS
 app.use((req, res, next) => {
