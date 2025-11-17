@@ -2,12 +2,13 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "cambiame";
 
 module.exports = (req, res, next) => {
+  // Express recorta la URL según donde se monte el router
+  // por eso SIEMPRE tenemos que mirar url completa
+  const fullUrl = req.originalUrl || req.url;
 
-  // Detectar cualquier ruta que contenga /auth/
-  const url = req.originalUrl || req.url;
-
-  if (url.includes("/auth/")) {
-    return next(); // permitir login, logout y refresh
+  // Permitir SIEMPRE todas las rutas que tengan /auth/
+  if (fullUrl.includes("/auth/")) {
+    return next();
   }
 
   const token = req.cookies.accessToken;
@@ -20,6 +21,7 @@ module.exports = (req, res, next) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
 
+    // solo pedimos CSRF en rutas protegidas, no en /auth/*
     if (!csrfHeader || csrfHeader.length < 20) {
       return res.status(403).json({ error: "Token CSRF inválido o ausente" });
     }
@@ -31,6 +33,7 @@ module.exports = (req, res, next) => {
     };
 
     next();
+
   } catch (err) {
     return res.status(401).json({ error: "Token inválido o expirado" });
   }
