@@ -3,6 +3,8 @@ const prisma = require('../config/prisma');
 
 // Obtener todos los coches
 exports.getAllCars = async (req, res) => {
+    console.log("API_URL =", process.env.NEXT_PUBLIC_API_URL);
+console.log("FETCH=", `${process.env.NEXT_PUBLIC_API_URL}/cars/${id}`);
   try {
     const cars = await prisma.car.findMany({
       include: { imagenes: true, defectos: true, piezas: true, mensajes: true },
@@ -16,6 +18,8 @@ exports.getAllCars = async (req, res) => {
 
 // Obtener coche por ID
 exports.getCarById = async (req, res) => {
+
+
   try {
     const id = parseInt(req.params.id);
     const car = await prisma.car.findUnique({
