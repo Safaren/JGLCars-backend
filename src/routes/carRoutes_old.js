@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const {
   getAllCars,
-  getCarById,
   createCar,
   updateCar,
   deleteCar,
@@ -14,7 +13,10 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 
 // públicas
 router.get('/', getAllCars);
-router.get('/:id', getCarById);
+router.get('/:id', async (req, res) => {
+  // opcional: implementa get by id en tu controller
+  res.status(501).json({ error: 'No implementado' });
+});
 
 // protegidas (solo Admin)
 router.post('/', authMiddleware, roleMiddleware(['Admin', 'ADMIN']), createCar);

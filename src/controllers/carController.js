@@ -5,7 +5,7 @@ const prisma = require('../config/prisma');
 // Obtener todos los coches
 exports.getAllCars = async (req, res) => {
   try {
-    console.log("API_URL =", process.env.NEXT_PUBLIC_API_URL);
+    
 
     const cars = await prisma.car.findMany({
       include: {
