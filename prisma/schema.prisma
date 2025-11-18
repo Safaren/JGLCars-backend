@@ -154,3 +154,11 @@ model MensajeContacto {
   car      Car?     @relation(fields: [carId], references: [id], onDelete: SetNull)
   fecha    DateTime @default(now())
 }
+
+
+model Carousel {
+  id        Int     @id @default(autoincrement())
+  url       String
+  public_id String? // útil para borrar en Cloudinary
+  createdAt DateTime @default(now())
+}
