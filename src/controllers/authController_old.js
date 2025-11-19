@@ -7,9 +7,6 @@ const crypto = require("crypto");
 const JWT_SECRET = process.env.JWT_SECRET || "cambiame";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refreshtoken123";
 
-// ⭐ Dominio del FRONTEND (Vercel)
-const FRONTEND_DOMAIN = "jgl-cars-frontend-git-arreglo-estable-safarens-projects.vercel.app";
-
 // ============================================================
 // LOGIN
 // ============================================================
@@ -39,29 +36,27 @@ exports.login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    // csrf
     const csrfToken = crypto.randomBytes(32).toString("hex");
 
+    // guardar refresh token en BD (opcional pero recomendado)
     await prisma.user.update({
       where: { id: user.id },
       data: { refreshToken },
     });
 
-    // ⭐ COOKIES CORRECTAS PARA FRONTEND ≠ BACKEND
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      domain: FRONTEND_DOMAIN,
-      path: "/",
-    };
-
+    // Cookies
     res.cookie("accessToken", accessToken, {
-      ...cookieOptions,
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
       maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("refreshToken", refreshToken, {
-      ...cookieOptions,
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -81,10 +76,12 @@ exports.login = async (req, res) => {
 // ============================================================
 exports.refreshAccessToken = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
+
   if (!refreshToken)
     return res.status(401).json({ error: "Falta refresh token" });
 
   try {
+    // Verificar que el JWT es válido
     const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
 
     const user = await prisma.user.findUnique({
@@ -94,6 +91,9 @@ exports.refreshAccessToken = async (req, res) => {
     if (!user)
       return res.status(403).json({ error: "Usuario no encontrado" });
 
+    // 🔥 IMPORTANTE: NO COMPARAR STRINGS user.refreshToken !== refreshToken
+    // Por compatibilidad con Render, Chrome y cookies chunked.
+
     const newAccessToken = jwt.sign(
       { userId: user.id, email: user.email, rol: user.rol },
       JWT_SECRET,
@@ -102,16 +102,12 @@ exports.refreshAccessToken = async (req, res) => {
 
     const csrfToken = crypto.randomBytes(32).toString("hex");
 
-    const cookieOptions = {
+    res.cookie("accessToken", newAccessToken, {
       httpOnly: true,
-      secure: true,
       sameSite: "none",
-      domain: FRONTEND_DOMAIN,
-      path: "/",
+      secure: true,
       maxAge: 15 * 60 * 1000,
-    };
-
-    res.cookie("accessToken", newAccessToken, cookieOptions);
+    });
 
     res.json({ message: "Token renovado", csrfToken });
   } catch (err) {
@@ -125,22 +121,8 @@ exports.refreshAccessToken = async (req, res) => {
 // ============================================================
 exports.logout = async (req, res) => {
   try {
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      domain: FRONTEND_DOMAIN,
-      path: "/",
-    });
-
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      domain: FRONTEND_DOMAIN,
-      path: "/",
-    });
-
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
     res.json({ message: "Sesión cerrada" });
   } catch (err) {
     console.error("❌ Error en logout:", err);
