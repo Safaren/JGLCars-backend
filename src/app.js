@@ -59,7 +59,15 @@ app.use((req, res, next) => {
 // ======================================================
 // 🔐 Seguridad + Parsers
 // ======================================================
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // ⛔ Desactiva CSP prohibitiva
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 app.use(express.json());
 app.use(cookieParser());
 
