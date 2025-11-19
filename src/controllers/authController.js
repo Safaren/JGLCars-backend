@@ -8,7 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "cambiame";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refreshtoken123";
 
 // ⭐ Dominio del FRONTEND (Vercel)
-const FRONTEND_DOMAIN = ".jgl-cars-frontend-git-arreglo-estable-safarens-projects.vercel.app";
+const FRONTEND_DOMAIN = ".vercel.app";
+;
 
 // ============================================================
 // LOGIN
