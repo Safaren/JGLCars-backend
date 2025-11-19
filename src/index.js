@@ -1,6 +1,6 @@
 // src/index.js
 require('dotenv').config();
-const app = require('./app_old2');
+const app = require('./app');
 
 const PORT = process.env.PORT || 4000;
 
