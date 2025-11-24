@@ -82,6 +82,8 @@ app.use("/api/contacto", require("./routes/contactoRoutes"));
 app.use("/api/piezas", require("./routes/piezaRoutes"));
 app.use("/api/fotos-pieza", require("./routes/fotoPiezaRoutes"));
 app.use("/api/fotos-car", require("./routes/fotoCarRoutes"));
+app.use("/api", require("./routes/uploadRoutes"));
+
 
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "API funcionando correctamente 🚗✨" });

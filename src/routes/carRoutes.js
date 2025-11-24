@@ -1,24 +1,20 @@
-// src/routes/carRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const {
-  getAllCars,
-  getCarById,
-  createCar,
-  updateCar,
-  deleteCar,
-} = require('../controllers/carController');
 
-const authMiddleware = require('../middlewares/authMiddleware');
-const roleMiddleware = require('../middlewares/roleMiddleware');
+const controller = require("../controllers/carController");
+const auth = require("../middlewares/authMiddleware");
 
-// públicas
-router.get('/', getAllCars);
-router.get('/:id', getCarById);
+// -------------------------------------
+// 🟦 RUTAS PÚBLICAS
+// -------------------------------------
+router.get("/", controller.getAllCars);
+router.get("/:id", controller.getCarById);
 
-// protegidas (solo Admin)
-router.post('/', authMiddleware, roleMiddleware(['Admin', 'ADMIN']), createCar);
-router.put('/:id', authMiddleware, roleMiddleware(['Admin', 'ADMIN']), updateCar);
-router.delete('/:id', authMiddleware, roleMiddleware(['Admin', 'ADMIN']), deleteCar);
+// -------------------------------------
+// 🔐 RUTAS SOLO ADMIN (crear, editar, borrar)
+// -------------------------------------
+router.post("/", controller.createCar);  // sin auth
+router.put("/:id", controller.updateCar);
+router.delete("/:id", controller.deleteCar);
 
 module.exports = router;

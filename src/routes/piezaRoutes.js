@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const piezaController = require("../controllers/piezaController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const authMiddleware = require("../middlewares/auth");
 
 // Rutas protegidas (solo usuarios autenticados)
 router.use(authMiddleware);

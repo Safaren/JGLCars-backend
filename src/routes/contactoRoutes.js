@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const { enviarMensaje, obtenerMensajes } = require('../controllers/contactoController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const authMiddleware = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 
 // Enviar mensaje de contacto (público o usuario logueado)

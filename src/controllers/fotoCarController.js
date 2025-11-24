@@ -1,8 +1,9 @@
+// src/controllers/fotoCarController.js
+
 const prisma = require("../config/prisma");
 const cloudinary = require("cloudinary").v2;
 const { Readable } = require("stream");
 
-// Configurar Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -10,15 +11,17 @@ cloudinary.config({
 });
 
 // --------------------------------------------------
-// OBTENER FOTOS
+// GET → Fotos del coche
 // --------------------------------------------------
 exports.getCarImages = async (req, res) => {
   try {
     const { carId } = req.params;
+
     const fotos = await prisma.imagen.findMany({
       where: { carId: Number(carId) },
       orderBy: { id: "asc" },
     });
+
     res.json(fotos);
   } catch (e) {
     console.error(e);
@@ -27,7 +30,7 @@ exports.getCarImages = async (req, res) => {
 };
 
 // --------------------------------------------------
-// SUBIR MÚLTIPLES IMÁGENES (CORREGIDO)
+// POST → Subir imágenes usando Cloudinary STREAM
 // --------------------------------------------------
 exports.uploadCarImages = async (req, res) => {
   try {
@@ -56,14 +59,15 @@ exports.uploadCarImages = async (req, res) => {
             }
           );
 
-          // Convertir buffer en stream
-          const bufferStream = Readable.from(file.buffer);
-          bufferStream.pipe(uploadStream);
+          Readable.from(file.buffer).pipe(uploadStream);
         });
       })
     );
 
-    res.json({ message: "Imágenes subidas correctamente", imagenes: results });
+    res.json({
+      message: "Imágenes subidas correctamente",
+      imagenes: results
+    });
 
   } catch (e) {
     console.error(e);
@@ -72,7 +76,7 @@ exports.uploadCarImages = async (req, res) => {
 };
 
 // --------------------------------------------------
-// BORRAR IMAGEN
+// DELETE → Eliminar imagen
 // --------------------------------------------------
 exports.deleteCarImage = async (req, res) => {
   try {
@@ -82,14 +86,18 @@ exports.deleteCarImage = async (req, res) => {
       where: { id: Number(id) },
     });
 
-    if (!imagen) return res.status(404).json({ error: "Imagen no encontrada" });
+    if (!imagen)
+      return res.status(404).json({ error: "Imagen no encontrada" });
 
     const publicId = imagen.url.split("/").pop().split(".")[0];
+
     await cloudinary.uploader.destroy(`jlgcars/coches/${publicId}`);
 
-    await prisma.imagen.delete({ where: { id: Number(id) } });
-    res.json({ message: "Imagen eliminada correctamente" });
+    await prisma.imagen.delete({
+      where: { id: Number(id) },
+    });
 
+    res.json({ message: "Imagen eliminada correctamente" });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Error al eliminar imagen" });

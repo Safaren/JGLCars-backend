@@ -18,6 +18,18 @@ enum TipoVenta {
   PIEZAS
 }
 
+enum Cambio {
+  manual
+  automatico
+}
+
+enum Ambiental {
+  B
+  C
+  CERO
+  ECO
+}
+
 // -------------------------------
 // MODELOS
 // -------------------------------
@@ -52,23 +64,32 @@ model Direccion {
 
 model Car {
   id             Int               @id @default(autoincrement())
-  marca          String
-  model          String
-  consumo        Float
-  combustible    String
-  anoFabricacion Int
-  cilindrada     Float
+  marca          String?
+  model          String?
+  consumo        Float?
+  km             Int?
+  combustible    String?
+  anoFabricacion Int?
+  cilindrada     Float?
+  puertas        Int?
+  plazas         Int?
+  itv            DateTime?
+  ambiental      Ambiental?
   precio         Float
-  potencia       Float
-  color          String
-  matricula      String            @unique
-  tipoVenta      TipoVenta
+  potencia       Float?
+  carroceria     String?
+  cambio         Cambio?
+  color          String?
+  matricula      String?            @unique
+  tipoVenta      TipoVenta?
   defectos       Defecto[]
   imagenes       Imagen[]
   piezas         Pieza[]
   compras        Compra[]
+  garantia       Boolean?
   favoritos      Favorito[] // Nueva relación
   mensajes       MensajeContacto[]
+  descripcion    String?
   // ✅ coherencia total con relaciones: compras, defectos, imágenes y piezas
 }
 

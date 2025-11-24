@@ -47,12 +47,53 @@ exports.getCarById = async (req, res) => {
 // Crear un coche (solo admin)
 exports.createCar = async (req, res) => {
   try {
-    const data = req.body;
-    const newCar = await prisma.car.create({ data });
-    res.status(201).json(newCar);
+    const {
+      marca,
+      model,
+      precio,
+      combustible,
+      anoFabricacion,
+      color,
+    } = req.body;
+
+    // Validaciones mínimas
+    if (!marca || !model || !precio) {
+      return res.status(400).json({ error: "Faltan campos obligatorios" });
+    }
+
+    // Crear coche con valores por defecto para los campos obligatorios
+    const newCar = await prisma.car.create({
+      data: {
+        marca,
+        model,
+        precio: parseFloat(precio),
+        combustible: combustible || "Gasolina",
+        anoFabricacion: anoFabricacion ? parseInt(anoFabricacion) : 2000,
+        color: color || "Blanco",
+
+        // Valores obligatorios del esquema Prisma
+        consumo: 0,
+        cilindrada: 1.0,
+        potencia: 90,
+
+        matricula: "TEMP-" + Date.now(),
+        tipoVenta: "COCHE",
+
+        puertas: 3,
+        plazas: 5,
+      },
+      include: { imagenes: true },
+    });
+console.log("🔥 CREATECAR DEVOLVIENDO:", newCar);
+
+    return res.status(201).json(newCar);
+
   } catch (error) {
-    console.error(error);
-    res.status(400).json({ error: 'Error al crear coche' });
+    console.error("❌ Error al crear coche:", error);
+    return res.status(400).json({
+      error: "Error al crear coche",
+      detalle: error.message,
+    });
   }
 };
 
