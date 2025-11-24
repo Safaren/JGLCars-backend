@@ -7,25 +7,27 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
-// ======================================================
-// 🌐 CORS CONFIGURACIÓN FINAL
-// ======================================================
-const allowedOrigins = [
-  "http://localhost:3000",
-  /.*\.vercel\.app$/
-];
+/* ======================================================
+   🌐 CORS CONFIGURACIÓN FINAL PARA LOCAL + VERCEL + DOMINIO REAL
+====================================================== */
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Permitir SSR, Postman, llamadas internas sin origin
+      // Permitir peticiones sin origen (SSR/CLI/Postman)
       if (!origin) return callback(null, true);
 
-      // Permitir ORIGEN EXACTO o subdominios de Vercel
-      if (
-        allowedOrigins.includes(origin) ||
-        /\.vercel\.app$/.test(origin)
-      ) {
+      // Dominios permitidos
+      const localhost = "http://localhost:3000";
+      const domainReal = "https://jlgcars.es";
+      const wildcardVercel = /\.vercel\.app$/;
+
+      const isAllowed =
+        origin === localhost ||
+        origin === domainReal ||
+        wildcardVercel.test(origin);
+
+      if (isAllowed) {
         return callback(null, true);
       }
 
@@ -36,9 +38,9 @@ app.use(
   })
 );
 
-// ======================================================
-// 🌐 Manejo de PRE-FLIGHT (OPTIONS) compatible con Node 22
-// ======================================================
+/* ======================================================
+   🌐 Manejo de PRE-FLIGHT (OPTIONS)
+====================================================== */
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
@@ -56,12 +58,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// ======================================================
-// 🔐 Seguridad + Parsers
-// ======================================================
+/* ======================================================
+   🔐 Seguridad + Parsers
+====================================================== */
 app.use(
   helmet({
-    contentSecurityPolicy: false, // ⛔ Desactiva CSP prohibitiva
+    contentSecurityPolicy: false,
     crossOriginResourcePolicy: false,
     crossOriginOpenerPolicy: false,
     crossOriginEmbedderPolicy: false,
@@ -71,9 +73,9 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ======================================================
-// 🚦 Rutas del Backend
-// ======================================================
+/* ======================================================
+   🚦 Rutas del Backend
+====================================================== */
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/cars", require("./routes/carRoutes"));
 app.use("/api", require("./routes/uploadRoutes"));
@@ -82,9 +84,13 @@ app.use("/api/contacto", require("./routes/contactoRoutes"));
 app.use("/api/piezas", require("./routes/piezaRoutes"));
 app.use("/api/fotos-pieza", require("./routes/fotoPiezaRoutes"));
 app.use("/api/fotos-car", require("./routes/fotoCarRoutes"));
-app.use("/api", require("./routes/uploadRoutes"));
 
+// ❗ Eliminado duplicado de uploadRoutes
+// app.use("/api", require("./routes/uploadRoutes"));
 
+/* ======================================================
+   🟢 Ruta base de verificación
+====================================================== */
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "API funcionando correctamente 🚗✨" });
 });
