@@ -184,3 +184,49 @@ exports.getCarMessages = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener los mensajes del coche' });
   }
 };
+exports.updateCarruselConfig = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { destacado, carruselFotos } = req.body;
+
+    if (carruselFotos.length > 3) {
+      return res.status(400).json({ error: "Máximo 3 imágenes" });
+    }
+
+    const updated = await prisma.car.update({
+      where: { id: Number(id) },
+      data: {
+        destacado: Boolean(destacado),
+        carruselFotos
+      }
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error guardando configuración del carrusel" });
+  }
+};
+// ⭐ ACTUALIZAR CONFIGURACIÓN DEL CARRUSEL
+exports.updateCarruselConfig = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { destacado, carruselFotos } = req.body;
+
+    if (carruselFotos.length > 3)
+      return res.status(400).json({ error: "Máximo 3 imágenes permitidas" });
+
+    const updated = await prisma.car.update({
+      where: { id: Number(id) },
+      data: {
+        destacado: Boolean(destacado),
+        carruselFotos,
+      },
+    });
+
+    return res.json(updated);
+  } catch (err) {
+    console.error("Error carrusel:", err);
+    res.status(500).json({ error: "Error guardando configuración" });
+  }
+};

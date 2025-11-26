@@ -103,3 +103,35 @@ exports.deleteCarImage = async (req, res) => {
     res.status(500).json({ error: "Error al eliminar imagen" });
   }
 };
+
+exports.reorderCarImages = async (req, res) => {
+  try {
+    const { carId } = req.params;
+    const { orderedImages } = req.body;
+
+    if (!orderedImages || !Array.isArray(orderedImages)) {
+      return res.status(400).json({ error: "Formato incorrecto" });
+    }
+
+    // 1. Borrar todas las imágenes anteriores (solo en BD)
+    await prisma.imagen.deleteMany({
+      where: { carId: Number(carId) },
+    });
+
+    // 2. Volverlas a insertar en el nuevo orden
+    let index = 0;
+    const inserts = orderedImages.map((url) => ({
+      url,
+      carId: Number(carId),
+      orden: index++, // si quieres guardarlo ordenado
+    }));
+
+    await prisma.imagen.createMany({ data: inserts });
+
+    return res.json({ message: "Orden actualizado correctamente" });
+  } catch (error) {
+    console.error("Error al reordenar imágenes:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+

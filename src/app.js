@@ -7,9 +7,63 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
+
+/* ======================================================
+   🌐 CORS CONFIGURACIÓN PROFESIONAL FINAL
+====================================================== */
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://jlgcars.es",
+    "https://www.jlgcars.es",
+  ];
+
+  const vercelRegex = /^https:\/\/[a-zA-Z0-9\-.]+\.vercel\.app$/;
+
+  // ORIGEN PERMITIDO
+  const isLocalhost =
+    origin?.startsWith("http://localhost") ||
+    origin?.startsWith("http://127.0.0.1");
+
+  const isAllowed =
+    isLocalhost ||
+    allowedOrigins.includes(origin) ||
+    vercelRegex.test(origin);
+
+  if (!origin || isAllowed) {
+    // Permitir origen válido
+    res.header("Access-Control-Allow-Origin", origin || "*");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-CSRF-Token"
+    );
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+  } else {
+    console.warn("⛔ Bloqueado por CORS:", origin);
+    return res.status(403).json({ error: "CORS no permitido" });
+  }
+
+  // Manejo de preflight
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
+
+
 /* ======================================================
    🌐 CORS CONFIGURACIÓN FINAL PARA LOCAL + VERCEL + DOMINIO REAL
-====================================================== */
+====================================================== 
 
 app.use(
   cors({
@@ -37,6 +91,7 @@ app.use(
     credentials: true,
   })
 );
+*/
 
 /* ======================================================
    🌐 Manejo de PRE-FLIGHT (OPTIONS)

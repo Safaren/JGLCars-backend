@@ -1,3 +1,5 @@
+// src/routes/carRoutes.js
+
 const express = require("express");
 const router = express.Router();
 
@@ -16,5 +18,8 @@ router.get("/:id", controller.getCarById);
 router.post("/", controller.createCar);  // sin auth
 router.put("/:id", controller.updateCar);
 router.delete("/:id", controller.deleteCar);
+
+router.put("/carrusel/:id", controller.updateCarruselConfig);
+
 
 module.exports = router;

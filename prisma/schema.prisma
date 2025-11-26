@@ -90,6 +90,8 @@ model Car {
   favoritos      Favorito[] // Nueva relación
   mensajes       MensajeContacto[]
   descripcion    String?
+    destacado      Boolean   @default(false)   // si aparece o no en carrusel
+  carruselFotos  String[]  @default([])      // URLs de las imágenes seleccionadas
   // ✅ coherencia total con relaciones: compras, defectos, imágenes y piezas
 }
 
@@ -116,6 +118,8 @@ model Imagen {
   id    Int    @id @default(autoincrement())
   url   String
   carId Int
+  orden Int?
+
   car   Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
 }
 
