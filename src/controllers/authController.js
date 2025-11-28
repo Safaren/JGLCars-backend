@@ -1,3 +1,5 @@
+// src/controllers/authController.js
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
@@ -7,7 +9,23 @@ console.log("CARGANDO authController DESDE:", __filename);
 
 console.log("🔥 INICIO LOGIN CONTROLLER CORRECTO", Date.now());
 
+exports.me = async (req, res) => {
+  try {
+    const token = req.cookies.accessToken;
+    if (!token) return res.json({ user: null });
 
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, email: true, rol: true }
+    });
+
+    res.json({ user });
+  } catch (e) {
+    res.json({ user: null });
+  }
+};
 
 // ============================================
 // LOGIN

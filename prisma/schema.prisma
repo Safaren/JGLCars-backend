@@ -28,6 +28,7 @@ enum Ambiental {
   C
   CERO
   ECO
+  SIN_ETIQUETA
 }
 
 // -------------------------------
@@ -84,6 +85,7 @@ model Car {
   tipoVenta      TipoVenta?
   defectos       Defecto[]
   imagenes       Imagen[]
+  videos        String[] @default([])
   piezas         Pieza[]
   compras        Compra[]
   garantia       Boolean?

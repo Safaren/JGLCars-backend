@@ -1,3 +1,5 @@
+// src/controllers/uploadController.js
+
 const cloudinary = require('../config/cloudinary');
 const prisma = require('../config/prisma');
 

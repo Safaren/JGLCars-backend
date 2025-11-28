@@ -7,14 +7,28 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
+/* ======================================================
+   🔐 Middleware Admin
+====================================================== */
+const requireAdmin = require("./middlewares/requireAdmin");
+
+// 🔵 Ruta protegida
+app.get("/api/admin", requireAdmin, (req, res) => {
+  res.json({ ok: true, message: "Bienvenido administrador" });
+});
+
+/* ======================================================
+   📌 Rutas META (corregido: antes estaba dentro de CORS ❌)
+====================================================== */
+const metaRoutes = require("./routes/metaRoutes");
+app.use("/meta", metaRoutes);
 
 /* ======================================================
    🌐 CORS CONFIGURACIÓN PROFESIONAL FINAL
+   Compatible con Next.js + Cookies HttpOnly + Producción
 ====================================================== */
-
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-
 
   const allowedOrigins = [
     "http://localhost:3000",
@@ -25,7 +39,6 @@ app.use((req, res, next) => {
 
   const vercelRegex = /^https:\/\/[a-zA-Z0-9\-.]+\.vercel\.app$/;
 
-  // ORIGEN PERMITIDO
   const isLocalhost =
     origin?.startsWith("http://localhost") ||
     origin?.startsWith("http://127.0.0.1");
@@ -36,7 +49,6 @@ app.use((req, res, next) => {
     vercelRegex.test(origin);
 
   if (!origin || isAllowed) {
-    // Permitir origen válido
     res.header("Access-Control-Allow-Origin", origin || "*");
     res.header("Access-Control-Allow-Credentials", "true");
     res.header(
@@ -52,46 +64,10 @@ app.use((req, res, next) => {
     return res.status(403).json({ error: "CORS no permitido" });
   }
 
-  // Manejo de preflight
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
+  if (req.method === "OPTIONS") return res.sendStatus(200);
 
   next();
 });
-
-
-/* ======================================================
-   🌐 CORS CONFIGURACIÓN FINAL PARA LOCAL + VERCEL + DOMINIO REAL
-====================================================== 
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Permitir peticiones sin origen (SSR/CLI/Postman)
-      if (!origin) return callback(null, true);
-
-      // Dominios permitidos
-      const localhost = "http://localhost:3000";
-      const domainReal = "https://jlgcars.es";
-      const wildcardVercel = /\.vercel\.app$/;
-
-      const isAllowed =
-        origin === localhost ||
-        origin === domainReal ||
-        wildcardVercel.test(origin);
-
-      if (isAllowed) {
-        return callback(null, true);
-      }
-
-      console.warn("⛔ Origen bloqueado por CORS:", origin);
-      return callback(new Error("CORS no permitido"), false);
-    },
-    credentials: true,
-  })
-);
-*/
 
 /* ======================================================
    🌐 Manejo de PRE-FLIGHT (OPTIONS)
@@ -140,14 +116,14 @@ app.use("/api/piezas", require("./routes/piezaRoutes"));
 app.use("/api/fotos-pieza", require("./routes/fotoPiezaRoutes"));
 app.use("/api/fotos-car", require("./routes/fotoCarRoutes"));
 
-// ❗ Eliminado duplicado de uploadRoutes
-// app.use("/api", require("./routes/uploadRoutes"));
-
 /* ======================================================
    🟢 Ruta base de verificación
 ====================================================== */
 app.get("/", (req, res) => {
-  res.json({ ok: true, message: "API funcionando correctamente 🚗✨" });
+  res.json({
+    ok: true,
+    message: "API funcionando correctamente 🚗✨",
+  });
 });
 
 module.exports = app;

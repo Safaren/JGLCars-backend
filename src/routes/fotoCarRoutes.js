@@ -5,7 +5,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const { uploadCarImages, getCarImages, deleteCarImage, reorderCarImages } = require("../controllers/fotoCarController");
-
+const requireAdmin = require("../middlewares/requireAdmin");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -13,14 +13,14 @@ const upload = multer({ storage });
 router.get("/:carId", getCarImages);
 
 // Subir varias imágenes
-router.post("/:carId", upload.array("files", 10), uploadCarImages);
+router.post("/:carId",requireAdmin, upload.array("files", 10), uploadCarImages);
 
 // Eliminar una imagen
-router.delete("/:id", deleteCarImage);
+router.delete("/:id", requireAdmin, deleteCarImage);
 
 
 
-router.post("/reorder/:carId", reorderCarImages);
+router.post("/reorder/:carId",requireAdmin, reorderCarImages);
 
 module.exports = router;
 

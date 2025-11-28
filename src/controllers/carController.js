@@ -101,7 +101,7 @@ console.log("🔥 CREATECAR DEVOLVIENDO:", newCar);
  * - Actualiza campos escalares.
  * - Si `imagenes` en body tiene URLs nuevas, crea registros Imagen asociados.
  */
-exports.updateCar = async (req, res) => {
+/*exports.updateCar = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const {
@@ -155,6 +155,110 @@ exports.updateCar = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al actualizar el coche" });
+  }
+};
+*/
+// Asegúrate de tener prisma importado:
+// const prisma = require('../config/prisma');
+
+
+exports.updateCar = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const body = req.body || {};
+    const data = {};
+
+    // Campos numéricos permitidos
+    const numericFields = ["precio", "consumo", "cilindrada", "potencia", "anoFabricacion", "km", "puertas", "plazas"];
+
+    // ENUMS exactos según tu schema
+    const VALID_TIPO_VENTA = ["COCHE", "PIEZAS"];
+    const VALID_CAMBIO = ["manual", "automatico"];
+    const VALID_AMBIENTAL = ["B", "C", "CERO", "ECO", "SIN_ETIQUETA"];
+
+    // Validar / parsear
+    for (const key of Object.keys(body)) {
+      const val = body[key];
+
+      if (val === "" || val === null || val === undefined) {
+        // omitimos campos vacíos
+        continue;
+      }
+
+      if (numericFields.includes(key)) {
+        if (!isNaN(Number(val))) {
+          data[key] = Number(val);
+        } else {
+          // ignoramos valores numéricos inválidos (alternativa: return 400)
+          continue;
+        }
+        continue;
+      }
+        // ⭐ FECHAS (DateTime)
+        if (key === "itv") {
+          const dateValue = new Date(val);
+          if (!isNaN(dateValue.getTime())) {
+            data[key] = dateValue;
+          }
+          continue;
+        }
+    // ⭐ VIDEOS (array de strings)
+      if (key === "videos") {
+        if (Array.isArray(val)) {
+          data.videos = val
+            .map((v) => String(v).trim())
+            .filter((v) => v.length > 0);
+        }
+        continue;
+      }
+      // Validar enums
+      if (key === "tipoVenta") {
+        if (!VALID_TIPO_VENTA.includes(val)) {
+          return res.status(400).json({ error: `tipoVenta inválido. Valores válidos: ${VALID_TIPO_VENTA.join(", ")}` });
+        }
+        data[key] = val;
+        continue;
+      }
+
+      if (key === "cambio") {
+        if (!VALID_CAMBIO.includes(val)) {
+          return res.status(400).json({ error: `cambio inválido. Valores válidos: ${VALID_CAMBIO.join(", ")}` });
+        }
+        data[key] = val;
+        continue;
+      }
+
+      if (key === "ambiental") {
+        if (!VALID_AMBIENTAL.includes(val)) {
+          return res.status(400).json({ error: `ambiental inválido. Valores válidos: ${VALID_AMBIENTAL.join(", ")}` });
+        }
+        data[key] = val;
+        continue;
+      }
+
+      // Campos de texto / otros
+      data[key] = val;
+    }
+delete data.imagenes;
+delete data.defectos;
+delete data.piezas;
+delete data.mensajes;
+delete data.carruselFotos;
+
+ if (Object.keys(data).length === 0) {
+      return res.json({ ok: true, message: "Sin cambios" });
+    }
+
+    const updated = await prisma.car.update({
+      where: { id },
+      data,
+      include: { imagenes: true },
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error("Error updateCar:", error);
+    return res.status(500).json({ error: error.message || "Error al actualizar el coche" });
   }
 };
 
