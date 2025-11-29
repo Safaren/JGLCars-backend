@@ -5,7 +5,11 @@ const router = express.Router();
 
 const controller = require("../controllers/carController");
 const requireAdmin = require("../middlewares/requireAdmin");
-const auth = require("../middlewares/authMiddleware");
+
+// -------------------------------------
+// 🟦 RUTAS CARRUSEL (PONERLAS ARRIBA)
+// -------------------------------------
+router.put("/carrusel/:id", requireAdmin, controller.updateCarruselConfig);
 
 // -------------------------------------
 // 🟦 RUTAS PÚBLICAS
@@ -16,11 +20,8 @@ router.get("/:id", controller.getCarById);
 // -------------------------------------
 // 🔐 RUTAS SOLO ADMIN (crear, editar, borrar)
 // -------------------------------------
-router.post("/",requireAdmin, controller.createCar);  
+router.post("/", requireAdmin, controller.createCar);
 router.put("/:id", requireAdmin, controller.updateCar);
-router.delete("/:id",requireAdmin, controller.deleteCar);
-
-router.put("/carrusel/:id", controller.updateCarruselConfig);
-
+router.delete("/:id", requireAdmin, controller.deleteCar);
 
 module.exports = router;

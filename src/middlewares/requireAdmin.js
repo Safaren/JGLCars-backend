@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
 
-const JWT_SECRET = process.env.JWT_SECRET;
+// ⭐ SOLUCIÓN: asegurar el secret siempre
+const JWT_SECRET = process.env.JWT_SECRET || "un-secret-super-seguro";
 
 module.exports = async (req, res, next) => {
   try {
