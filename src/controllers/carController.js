@@ -160,7 +160,7 @@ exports.updateCar = async (req, res) => {
       data[key] = val;
     }
 
-    // 🚫 YA NO BORRAMOS carruselFotos (error original)
+
     delete data.imagenes;
     delete data.defectos;
     delete data.piezas;

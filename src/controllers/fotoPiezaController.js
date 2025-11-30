@@ -8,20 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ Obtener fotos por pieza
-exports.getFotosByPieza = async (req, res) => {
-  try {
-    const { piezaId } = req.params;
-    const fotos = await prisma.fotoPieza.findMany({
-      where: { piezaId: parseInt(piezaId) },
-      orderBy: { id: "asc" },
-    });
-    res.json(fotos);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al obtener fotos" });
-  }
-};
+
 
 // ✅ Subir múltiples imágenes
 exports.uploadMultiple = async (req, res) => {

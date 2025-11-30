@@ -2,52 +2,57 @@
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
 const prisma = require("../config/prisma");
 
-const JWT_SECRET = process.env.JWT_SECRET || "un-secret-super-seguro";
-console.log("CARGANDO authController DESDE:", __filename);
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret";
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh-secret";
 
-// ============================================
-// HELPERS
-// ============================================
+/* ======================================================
+   COOKIE OPTIONS — LOCAL + PRODUCCIÓN (VERCEL)
+====================================================== */
+function cookieOptions() {
+  const isProd = process.env.NODE_ENV === "production";
 
+  // 🔥 LOCALHOST → NO usar domain
+  if (!isProd) {
+    return {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    };
+  }
+
+  // 🔥 PRODUCCIÓN (VERCEL)
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    domain: ".jlgcars.es",
+    path: "/",
+  };
+}
+
+/* ======================================================
+   HELPERS
+====================================================== */
 function generateAccessToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, rol: user.rol },
     JWT_SECRET,
-    { expiresIn: "15m" }   // Vida corta → seguro
+    { expiresIn: "15m" }
   );
 }
 
-function generateRefreshToken() {
-  return crypto.randomBytes(40).toString("hex");
+function generateRefreshToken(userId) {
+  return jwt.sign({ userId }, JWT_REFRESH_SECRET, {
+    expiresIn: "7d",
+  });
 }
 
-// ============================================
-// ME
-// ============================================
-exports.me = async (req, res) => {
-  try {
-    const token = req.cookies.accessToken;
-    if (!token) return res.json({ user: null });
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, rol: true }
-    });
-
-    return res.json({ user });
-  } catch (e) {
-    return res.json({ user: null });
-  }
-};
-
-// ============================================
-// LOGIN
-// ============================================
+/* ======================================================
+   LOGIN
+====================================================== */
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -60,32 +65,28 @@ exports.login = async (req, res) => {
     if (!valid)
       return res.status(401).json({ error: "Credenciales inválidas" });
 
-    // 🔥 Generar tokens
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken();
+    const refreshToken = generateRefreshToken(user.id);
 
-    // Guardar refresh token en BD
     await prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken }
+      data: { refreshToken },
     });
 
-    // 🔥 Enviar refresh token via cookie HttpOnly
+    // Enviar cookies correctas según entorno
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false, // PON TRUE EN PRODUCCIÓN HTTPS
-      sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+      ...cookieOptions(),
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.json({
       message: "LOGIN OK",
-      accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        rol: user.rol,
-      },
+      user: { id: user.id, email: user.email, rol: user.rol },
     });
 
   } catch (err) {
@@ -94,9 +95,87 @@ exports.login = async (req, res) => {
   }
 };
 
-// ============================================
-// LOGOUT
-// ============================================
+/* ======================================================
+   AUTO LOGIN — RENUEVA ACCESS TOKEN
+====================================================== */
+exports.autoLogin = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.json({ loggedIn: false });
+
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    } catch {
+      return res.json({ loggedIn: false });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
+
+    if (!user || user.refreshToken !== refreshToken)
+      return res.json({ loggedIn: false });
+
+    const newAccessToken = generateAccessToken(user);
+
+    res.cookie("accessToken", newAccessToken, {
+      ...cookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+
+    return res.json({
+      loggedIn: true,
+      user: { id: user.id, email: user.email, rol: user.rol },
+    });
+
+  } catch (err) {
+    console.error("❌ autoLogin:", err);
+    return res.json({ loggedIn: false });
+  }
+};
+
+/* ======================================================
+   REFRESH ACCESS TOKEN
+====================================================== */
+exports.refreshAccessToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken)
+      return res.status(401).json({ error: "No refresh token" });
+
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Refresh inválido" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
+
+    if (!user || user.refreshToken !== refreshToken)
+      return res.status(401).json({ error: "Refresh incorrecto" });
+
+    const newAccessToken = generateAccessToken(user);
+
+    res.cookie("accessToken", newAccessToken, {
+      ...cookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+
+    return res.json({ accessToken: newAccessToken });
+
+  } catch (err) {
+    console.error("❌ refreshAccessToken:", err);
+    return res.status(401).json({ error: "Error refrescando token" });
+  }
+};
+
+/* ======================================================
+   LOGOUT
+====================================================== */
 exports.logout = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -104,61 +183,21 @@ exports.logout = async (req, res) => {
     if (refreshToken) {
       await prisma.user.updateMany({
         where: { refreshToken },
-        data: { refreshToken: null }
+        data: { refreshToken: null },
       });
     }
 
-    res.clearCookie("refreshToken");
+    const opts = { path: "/" };
+    const isProd = process.env.NODE_ENV === "production";
+    if (isProd) opts.domain = ".jlgcars.es";
+
+    res.clearCookie("accessToken", opts);
+    res.clearCookie("refreshToken", opts);
 
     return res.json({ message: "Logout OK" });
-  } catch {
-    res.json({ message: "Logout OK" });
-  }
-};
-
-// ============================================
-// REFRESH TOKEN — IMPLEMENTADO ✔
-// ============================================
-exports.refreshAccessToken = async (req, res) => {
-  try {
-    const { refreshToken } = req.cookies;
-    if (!refreshToken)
-      return res.status(401).json({ error: "No refresh token" });
-
-    // Busca el usuario que tiene este refresh token
-    const user = await prisma.user.findUnique({
-      where: { refreshToken }
-    });
-
-    if (!user)
-      return res.status(401).json({ error: "Refresh token inválido" });
-
-    // 🔥 Generamos un nuevo access token
-    const newAccessToken = generateAccessToken(user);
-
-    // 🔥 ROTACIÓN: generamos refresh token nuevo
-    const newRefreshToken = generateRefreshToken();
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: newRefreshToken }
-    });
-
-    // Enviamos cookie renovada
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: false, // TRUE en prod
-      sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
-    return res.json({
-      accessToken: newAccessToken,
-      user: { id: user.id, email: user.email, rol: user.rol }
-    });
 
   } catch (err) {
-    console.error("❌ Error en refresh:", err);
-    return res.status(401).json({ error: "Token expirado" });
+    console.error("❌ logout:", err);
+    return res.json({ message: "Logout OK" });
   }
 };

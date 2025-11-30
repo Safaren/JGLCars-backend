@@ -1,52 +1,111 @@
+// src/middlewares/requireAdmin.js
+
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
 
-// ⭐ SOLUCIÓN: asegurar el secret siempre
-const JWT_SECRET = process.env.JWT_SECRET || "un-secret-super-seguro";
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret";
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh-secret";
 
-module.exports = async (req, res, next) => {
+/* ======================================================
+   COOKIE OPTIONS — LOCAL + PRODUCCIÓN
+====================================================== */
+function cookieOptions() {
+  const isProd = process.env.NODE_ENV === "production";
+
+  // LOCAL → sin domain
+  if (!isProd) {
+    return {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    };
+  }
+
+  // PRODUCCIÓN → cookies válidas en jlgcars.es + www
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    domain: ".jlgcars.es",
+    path: "/",
+  };
+}
+
+module.exports = async function requireAdmin(req, res, next) {
   try {
-    let token = null;
+    const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
 
-    // 1️⃣ Intentar leer desde cookies
-    if (req.cookies && req.cookies.accessToken) {
-      token = req.cookies.accessToken;
-    }
-
-    // 2️⃣ Intentar leer desde Authorization: Bearer xxx
-    if (!token && req.headers.authorization) {
-      const authHeader = req.headers.authorization;
-      if (authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1];
-      }
-    }
-
-    if (!token) {
+    if (!accessToken) {
       return res.status(401).json({ error: "No autenticado" });
     }
 
-    // Verificar token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    let payload;
 
-    // ⭐ CORREGIDO: el token usa "id", NO "userId"
+    // 1️⃣ Validar access token
+    try {
+      payload = jwt.verify(accessToken, JWT_SECRET);
+
+      if (payload.rol !== "admin") {
+        return res.status(403).json({ error: "No autorizado" });
+      }
+
+      req.user = payload;
+      return next();
+    } catch (err) {
+      if (err.name !== "TokenExpiredError") {
+        return res.status(401).json({ error: "Token inválido" });
+      }
+    }
+
+    // 2️⃣ Access expirado → usar refresh
+    if (!refreshToken) {
+      return res.status(401).json({ error: "Sesión expirada" });
+    }
+
+    let refreshPayload;
+    try {
+      refreshPayload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Refresh token inválido" });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: refreshPayload.userId },
     });
 
-    if (!user) {
-      return res.status(401).json({ error: "Usuario no encontrado" });
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({ error: "Refresh token no coincide" });
     }
 
-    if (user.rol.toLowerCase() !== "admin") {
-      return res
-        .status(403)
-        .json({ error: "Acceso restringido: solo administradores" });
-    }
+    // 3️⃣ Generar nuevo access token silencioso
+    const newAccessToken = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        rol: user.rol,
+      },
+      JWT_SECRET,
+      { expiresIn: "15m" }
+    );
 
-    req.user = user;
-    next();
+    // Guardar cookie
+    res.cookie("accessToken", newAccessToken, {
+      ...cookieOptions(),
+      maxAge: 15 * 60 * 1000,
+    });
+
+    req.user = {
+      id: user.id,
+      email: user.email,
+      rol: user.rol,
+    };
+
+    return next();
+
   } catch (err) {
-    console.error("❌ Error en requireAdmin:", err);
-    return res.status(401).json({ error: "Token inválido" });
+    console.error("❌ requireAdmin:", err);
+    return res.status(500).json({ error: "Error interno en autenticación" });
   }
 };
