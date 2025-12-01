@@ -13,24 +13,22 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh-secret";
 function cookieOptions() {
   const isProd = process.env.NODE_ENV === "production";
 
+  // 🔒 IMPORTANTE: sameSite: "none" REQUIERE secure: true en TODOS los entornos
+  // Esto significa que necesitas HTTPS incluso en localhost
   const baseOptions = {
     httpOnly: true,
-    secure: true,
+    secure: true,  // ✅ Ahora funciona correctamente con sameSite: "none"
     sameSite: "none",
     path: "/",
   };
 
-  // En producción solo forzamos domain si lo indicamos por ENV
+  // En producción añadimos el dominio
   if (isProd && process.env.COOKIE_DOMAIN) {
     return {
       ...baseOptions,
       domain: process.env.COOKIE_DOMAIN,
     };
   }
-
-  // Si no hay COOKIE_DOMAIN, no ponemos domain (funciona en Vercel / previews)
-  return baseOptions;
-}
 
   // Local development - sin domain pero con secure: true
   return baseOptions;

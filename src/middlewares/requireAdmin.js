@@ -31,10 +31,6 @@ function cookieOptions() {
   return baseOptions;
 }
 
-  // Local development - sin domain pero con secure: true
-  return baseOptions;
-}
-
 module.exports = async function requireAdmin(req, res, next) {
   try {
     const accessToken = req.cookies.accessToken;
