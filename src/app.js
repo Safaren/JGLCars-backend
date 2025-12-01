@@ -1,14 +1,12 @@
-// src/app.js
 require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const path = require("path");
 
 const app = express();
 
 /* ======================================================
-   🌍 CONFIGURACIÓN CORS (VERSIÓN CORRECTA)
+   🌍 CORS — COOKIES PERFECTAS LOCAL + VERCEL
 ====================================================== */
 const allowedOrigins = [
   "http://localhost:3000",
@@ -19,6 +17,7 @@ const allowedOrigins = [
 
 const vercelRegex = /^https:\/\/[a-zA-Z0-9\-.]+\.vercel\.app$/;
 
+// 👉 IMPORTANTÍSIMO: CORS VA AL PRINCIPIO
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
@@ -26,7 +25,9 @@ app.use((req, res, next) => {
     allowedOrigins.includes(origin) ||
     vercelRegex.test(origin);
 
-  if (origin && isAllowed) {
+  res.setHeader("Content-Security-Policy", "script-src 'self' 'unsafe-eval'");
+
+  if (isAllowed) {
     res.header("Access-Control-Allow-Origin", origin);
   }
 
@@ -40,16 +41,17 @@ app.use((req, res, next) => {
     "GET, POST, PUT, DELETE, OPTIONS"
   );
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
+  if (req.method === "OPTIONS") return res.sendStatus(200);
 
   next();
 });
 
 /* ======================================================
-   🛡 Seguridad + middleware base
+   🛡 DESPUÉS DE CORS VIENEN LOS OTROS
 ====================================================== */
+app.use(cookieParser());
+app.use(express.json());
+
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -59,11 +61,8 @@ app.use(
   })
 );
 
-app.use(express.json());
-app.use(cookieParser());
-
 /* ======================================================
-   🚦 RUTAS DEL BACKEND
+   🚦 RUTAS
 ====================================================== */
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/cars", require("./routes/carRoutes"));

@@ -12,24 +12,25 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh-secret";
 function cookieOptions() {
   const isProd = process.env.NODE_ENV === "production";
 
-  // LOCAL → sin domain
-  if (!isProd) {
+  // 🔒 IMPORTANTE: sameSite: "none" REQUIERE secure: true en TODOS los entornos
+  // Esto significa que necesitas HTTPS incluso en localhost
+  const baseOptions = {
+    httpOnly: true,
+    secure: true,  // ✅ Ahora funciona correctamente con sameSite: "none"
+    sameSite: "none",
+    path: "/",
+  };
+
+  // En producción añadimos el dominio
+  if (isProd) {
     return {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path: "/",
+      ...baseOptions,
+      domain: ".jlgcars.es",
     };
   }
 
-  // PRODUCCIÓN → cookies válidas en jlgcars.es + www
-  return {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    domain: ".jlgcars.es",
-    path: "/",
-  };
+  // Local development - sin domain pero con secure: true
+  return baseOptions;
 }
 
 module.exports = async function requireAdmin(req, res, next) {
@@ -47,7 +48,8 @@ module.exports = async function requireAdmin(req, res, next) {
     try {
       payload = jwt.verify(accessToken, JWT_SECRET);
 
-      if (payload.rol !== "admin") {
+      // Aceptamos "admin" en cualquier combinación de mayúsculas/minúsculas
+      if (!payload.rol || payload.rol.toLowerCase() !== "admin") {
         return res.status(403).json({ error: "No autorizado" });
       }
 
