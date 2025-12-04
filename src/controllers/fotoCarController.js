@@ -46,8 +46,13 @@ exports.uploadCarImages = async (req, res) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             { folder: "jlgcars/coches" },
             async (error, result) => {
-              if (error) return reject(error);
-
+              if (error) 
+              {
+                console.error("Error en subida a Cloudinary", error);
+                return reject(error);
+              }
+                
+              
               const fotoDb = await prisma.imagen.create({
                 data: {
                   url: result.secure_url,

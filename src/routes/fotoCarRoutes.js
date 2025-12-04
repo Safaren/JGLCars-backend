@@ -13,7 +13,7 @@ const upload = multer({ storage });
 router.get("/:carId", getCarImages);
 
 // Subir varias imágenes
-router.post("/:carId",requireAdmin, upload.array("files", 10), uploadCarImages);
+router.post("/:carId",requireAdmin, upload.array("files", 40), uploadCarImages);
 
 // Eliminar una imagen
 router.delete("/:id", requireAdmin, deleteCarImage);

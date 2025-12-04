@@ -15,7 +15,7 @@ const {
 } = require("../controllers/fotoCarController");
 
 router.get("/fotos-car/:carId", getCarImages);
-router.post("/fotos-car/:carId",requireAdmin, upload.array("files", 10), uploadCarImages);
+router.post("/fotos-car/:carId",requireAdmin, upload.array("files", 40), uploadCarImages);
 router.delete("/fotos-car/:id",requireAdmin, deleteCarImage);
 
 module.exports = router;
