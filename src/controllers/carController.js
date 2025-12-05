@@ -4,24 +4,50 @@ const prisma = require('../config/prisma');
 // ===============================
 // 🔵 OBTENER TODOS LOS COCHES
 // ===============================
+// ===============================
+// 🔵 OBTENER COCHES CON PAGINACIÓN
+// ===============================
 exports.getAllCars = async (req, res) => {
   try {
-    const cars = await prisma.car.findMany({
-      include: {
-        imagenes: true,
-        defectos: true,
-        piezas: true,
-        mensajes: true,
-      },
-    });
+    // Leer page y limit de query string
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
 
-    res.json(cars);
+    const skip = (page - 1) * limit;
+
+    // Pedimos coches con skip + take
+    const [cars, total] = await Promise.all([
+      prisma.car.findMany({
+        skip,
+        take: limit,
+        include: {
+          imagenes: true,
+          defectos: true,
+          piezas: true,
+          mensajes: true,
+        },
+        orderBy: { id: "desc" },
+      }),
+
+      prisma.car.count(),
+    ]);
+
+    const hasMore = page * limit < total;
+
+    return res.json({
+      items: cars,
+      page,
+      limit,
+      total,
+      hasMore,
+    });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al obtener coches' });
+    return res.status(500).json({ error: "Error al obtener coches" });
   }
 };
+
 
 // ===============================
 // 🔵 OBTENER UN COCHE POR ID
