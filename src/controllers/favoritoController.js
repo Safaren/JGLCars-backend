@@ -53,11 +53,19 @@ exports.getFavoritos = async (req, res) => {
     const favoritos = await prisma.favorito.findMany({
       where: { userId },
       include: {
-        car: true, // Incluimos información del coche
+        car: {
+          include: {
+            imagenes: true, // Incluir imágenes del coche
+          },
+        },
       },
     });
 
-    res.json(favoritos);
+    res.json({
+      favoritos: favoritos.map((f) => ({
+        ...f.car,
+      })),
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener favoritos' });

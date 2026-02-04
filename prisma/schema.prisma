@@ -37,12 +37,12 @@ enum Ambiental {
 
 model User {
   id          Int         @id @default(autoincrement())
-  nombre      String
-  apellidos   String
-  dni         String      @unique
+  nombre      String?
+  apellidos   String?
+  dni         String?     @unique
   email       String      @unique
-  movil       String
-  password    String
+  movil       String?
+  password    String?     // Opcional: null para usuarios de Google OAuth
   direcciones Direccion[]
   compras     Compra[]
   rol         String      @default("User") // "User" o "Admin"
@@ -92,8 +92,9 @@ model Car {
   favoritos      Favorito[] // Nueva relación
   mensajes       MensajeContacto[]
   descripcion    String?
-    destacado      Boolean   @default(false)   // si aparece o no en carrusel
+  destacado      Boolean   @default(false)   // si aparece o no en carrusel
   carruselFotos  String[]  @default([])      // URLs de las imágenes seleccionadas
+  carruselMode   String    @default("custom") // "custom" o "auto" - modo del carousel
   // ✅ coherencia total con relaciones: compras, defectos, imágenes y piezas
 }
 
@@ -188,4 +189,11 @@ model Carousel {
   url       String
   public_id String? // útil para borrar en Cloudinary
   createdAt DateTime @default(now())
+}
+
+// Modelo para settings globales
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
 }

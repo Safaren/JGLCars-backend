@@ -62,6 +62,10 @@ exports.login = async (req, res) => {
     if (!user)
       return res.status(401).json({ error: "Credenciales inválidas" });
 
+    // Si el usuario se registró con Google, no tiene password
+    if (!user.password)
+      return res.status(401).json({ error: "Este usuario se registró con Google. Usa el botón 'Entrar con Google'" });
+
     const valid = await bcrypt.compare(password, user.password);
     if (!valid)
       return res.status(401).json({ error: "Credenciales inválidas" });
@@ -74,7 +78,6 @@ exports.login = async (req, res) => {
       data: { refreshToken },
     });
 
-    // Enviar cookies correctas según entorno
     res.cookie("accessToken", accessToken, {
       ...cookieOptions(),
       maxAge: 15 * 60 * 1000,
@@ -93,6 +96,38 @@ exports.login = async (req, res) => {
   } catch (err) {
     console.error("❌ Error en login:", err);
     return res.status(500).json({ error: "Error interno" });
+  }
+};
+
+/* ======================================================
+   REGISTER
+====================================================== */
+exports.register = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Faltan datos (email y contraseña)" });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return res.status(409).json({ error: "Usuario ya existe" });
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        nombre: name || null,
+        email,
+        password: hashed,
+        rol: "User",
+      },
+    });
+
+    return res.status(201).json({ message: "Usuario creado", user: { id: user.id, email: user.email, rol: user.rol } });
+  } catch (err) {
+    console.error("❌ register:", err.message);
+    return res.status(500).json({ error: "Error interno: " + err.message });
   }
 };
 

@@ -62,7 +62,20 @@ app.use(
 );
 
 /* ======================================================
-   🚦 RUTAS
+   � PASSPORT (Google OAuth) — ANTES DE RUTAS
+====================================================== */
+const passport = require("passport");
+try {
+  const setupPassport = require("./config/passport");
+  setupPassport();
+  app.use(passport.initialize());
+  console.log("✅ Passport Google OAuth configurado");
+} catch (e) {
+  console.error("❌ Error configurando Passport:", e.message);
+}
+
+/* ======================================================
+   �🚦 RUTAS
 ====================================================== */
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/cars", require("./routes/carRoutes"));
@@ -71,6 +84,9 @@ app.use("/api", require("./routes/uploadRoutes"));
 app.use("/api/favoritos", require("./routes/favoritoRoutes"));
 app.use("/api/contacto", require("./routes/contactoRoutes"));
 app.use("/meta", require("./routes/metaRoutes"));
+
+// Rutas para settings globales
+app.use("/api/settings", require("./routes/settingsRoutes"));
 
 /* ======================================================
    TEST

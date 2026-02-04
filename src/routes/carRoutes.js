@@ -10,6 +10,7 @@ const requireAdmin = require("../middlewares/requireAdmin");
 // 🟦 RUTAS CARRUSEL (PONERLAS ARRIBA)
 // -------------------------------------
 router.put("/carrusel/:id", requireAdmin, controller.updateCarruselConfig);
+router.put("/carrusel-mode", requireAdmin, controller.updateGlobalCarruselMode);
 
 // -------------------------------------
 // 🟦 RUTAS PÚBLICAS

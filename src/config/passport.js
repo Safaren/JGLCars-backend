@@ -1,95 +1,55 @@
-/*
 // config/passport.js
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const FacebookStrategy = require("passport-facebook").Strategy;
-const prisma = require("./prisma"); // tu config prisma
 
 module.exports = function setupPassport() {
-  // Google
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    console.warn("⚠️  GOOGLE_CLIENT_ID no configurado. Google OAuth no funcionará.");
+    return;
+  }
+
+  const isDev = process.env.NODE_ENV !== "production";
+  const callbackURL = isDev 
+    ? "http://localhost:4000/api/auth/google/callback"
+    : "https://jlgcars-api.onrender.com/api/auth/google/callback";
+
   passport.use(
     new GoogleStrategy(
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL,
+        callbackURL,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          // Buscar usuario por providerId
+          const prisma = require("./prisma");
           const email = profile.emails && profile.emails[0] && profile.emails[0].value;
-          let user = await prisma.user.findUnique({
-            where: { email },
-          });
 
-          if (!user) {
-            // crear usuario
+          let user = null;
+
+          if (email) {
+            user = await prisma.user.findUnique({ where: { email } }).catch(() => null);
+          }
+
+          if (!user && email) {
             user = await prisma.user.create({
               data: {
-                email: email || `google-${profile.id}@noemail.local`,
-                name: profile.displayName || null,
-                provider: "google",
-                providerId: profile.id,
-                rol: "user",
+                email,
+                nombre: profile.displayName || null,
+                rol: "User",
               },
             });
-          } else {
-            // actualizar provider si falta
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { provider: "google", providerId: profile.id },
-            }).catch(() => {});
+            console.log("✅ Usuario Google creado:", email);
+          } else if (user) {
+            console.log("✅ Usuario Google encontrado:", email);
           }
 
           done(null, user);
         } catch (err) {
+          console.error("❌ Error en Google Strategy:", err.message);
           done(err, null);
         }
       }
     )
   );
-
-  // Facebook
-  passport.use(
-    new FacebookStrategy(
-      {
-        clientID: process.env.FACEBOOK_APP_ID,
-        clientSecret: process.env.FACEBOOK_APP_SECRET,
-        callbackURL: process.env.FACEBOOK_CALLBACK_URL,
-        profileFields: ["id", "displayName", "emails"],
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          const email = profile.emails && profile.emails[0] && profile.emails[0].value;
-          let user = await prisma.user.findUnique({
-            where: { email },
-          });
-
-          if (!user) {
-            user = await prisma.user.create({
-              data: {
-                email: email || `facebook-${profile.id}@noemail.local`,
-                name: profile.displayName || null,
-                provider: "facebook",
-                providerId: profile.id,
-                rol: "user",
-              },
-            });
-          } else {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { provider: "facebook", providerId: profile.id },
-            }).catch(() => {});
-          }
-
-          done(null, user);
-        } catch (err) {
-          done(err, null);
-        }
-      }
-    )
-  );
-
-  // (No serialización persistente necesaria para JWT flow; dejamos minimal)
 };
-*/

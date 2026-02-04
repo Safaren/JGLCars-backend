@@ -103,6 +103,9 @@ exports.createCar = async (req, res) => {
         tipoVenta: "COCHE",
         puertas: 3,
         plazas: 5,
+        carruselFotos: [],
+        carruselMode: "custom",
+        destacado: false,
       },
       include: { imagenes: true },
     });
@@ -245,14 +248,21 @@ exports.getCarMessages = async (req, res) => {
 exports.updateCarruselConfig = async (req, res) => {
   try {
     const { id } = req.params;
-    const { destacado, carruselFotos } = req.body;
+    const { destacado, carruselFotos, carruselMode } = req.body;
 
     if (!Array.isArray(carruselFotos)) {
       return res.status(400).json({ error: "carruselFotos debe ser un array" });
     }
 
-    if (carruselFotos.length > 3) {
-      return res.status(400).json({ error: "Máximo 3 imágenes permitidas" });
+    // Validación según modo: custom -> máximo 1, auto -> máximo 3
+    if (carruselMode === "custom") {
+      if (carruselFotos.length > 1) {
+        return res.status(400).json({ error: "En modo personalizado solo 1 imagen permitida" });
+      }
+    } else {
+      if (carruselFotos.length > 3) {
+        return res.status(400).json({ error: "Máximo 3 imágenes permitidas" });
+      }
     }
 
     const updated = await prisma.car.update({
@@ -260,6 +270,7 @@ exports.updateCarruselConfig = async (req, res) => {
       data: {
         destacado: Boolean(destacado),
         carruselFotos,
+        carruselMode: carruselMode || undefined,
       },
     });
 
@@ -268,5 +279,25 @@ exports.updateCarruselConfig = async (req, res) => {
   } catch (err) {
     console.error("Error carrusel:", err);
     res.status(500).json({ error: "Error guardando configuración del carrusel" });
+  }
+};
+
+// ===============================
+// 🔵 ACTUALIZAR MODO GLOBAL DEL CARRUSEL
+// ===============================
+exports.updateGlobalCarruselMode = async (req, res) => {
+  try {
+    const { mode } = req.body;
+    if (!mode || (mode !== 'custom' && mode !== 'auto')) {
+      return res.status(400).json({ error: 'Modo inválido' });
+    }
+
+    // Actualizamos todos los coches para establecer el modo
+    await prisma.car.updateMany({ data: { carruselMode: mode } });
+
+    return res.json({ message: 'Modo de carrusel actualizado', mode });
+  } catch (err) {
+    console.error('Error updateGlobalCarruselMode:', err);
+    return res.status(500).json({ error: 'Error actualizando modo global' });
   }
 };
